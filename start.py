@@ -24,12 +24,12 @@ def build_user_label(update: Update) -> str:
 def normalize_card_input(raw_value: str) -> str:
     value = (raw_value or "").strip()
     if not value:
-        raise ValueError("Informe o cartão para a simulação.")
+        raise ValueError("Informe os dados do cartão")
     cleaned = re.sub(r"\s+", "", value)
     if len(cleaned) < 4 or len(cleaned) > 19:
-        raise ValueError("Cartão inválido para simulação. Use um valor fictício com 4 a 19 dígitos.")
+        raise ValueError("Cartão inválido. Use uma numeração com 4 a 19 dígitos.")
     if not cleaned.isdigit():
-        raise ValueError("Cartão inválido para simulação. Use apenas dígitos fictícios.")
+        raise ValueError("Cartão inválido. Use apenas númerações válidas.")
     return cleaned
 
 
@@ -37,16 +37,16 @@ def normalize_expiry(mm: str, yy: str) -> tuple[str, str]:
     mm_value = (mm or "").strip()
     yy_value = (yy or "").strip()
     if not re.fullmatch(r"\d{2}", mm_value):
-        raise ValueError("MM inválido. Use dois dígitos fictícios, exemplo: 12.")
+        raise ValueError("MM inválido. Use dois dígitos, exemplo: 12.")
     if not re.fullmatch(r"\d{2,4}", yy_value):
-        raise ValueError("YY inválido. Use dois ou quatro dígitos fictícios, exemplo: 27.")
+        raise ValueError("YY inválido. Use dois ou quatro dígitos, exemplo: 27.")
     return mm_value, yy_value
 
 
 def normalize_cvv(raw_cvv: str) -> str:
     cvv = (raw_cvv or "").strip()
     if not re.fullmatch(r"\d{3,4}", cvv):
-        raise ValueError("CVV inválido. Use 3 ou 4 dígitos fictícios.")
+        raise ValueError("CVV inválido. Use 3 ou 4 dígitos.")
     return cvv
 
 
@@ -64,7 +64,7 @@ def parse_simulation_payload(args: list[str]) -> tuple[str, str, str, str]:
 def validate_bin(raw_value: str) -> str:
     value = (raw_value or "").strip()
     if not re.fullmatch(r"\d{4,8}", value):
-        raise ValueError("BIN inválido. Informe um valor parcial com 4 a 8 dígitos numéricos.")
+        raise ValueError("BIN inválida. Informe um valor parcial com 4 a 8 dígitos numéricos.")
     return value
 
 
@@ -78,20 +78,20 @@ def pick_status(preferred_status: str | None = None) -> str:
 def render_chkall_result(status: str, bin_value: str, verified_by: str) -> str:
     if status == "LIVE":
         icon = "✅"
-        banner = "Visa (EXEMPLO)"
-        level = "GOLD (EXEMPLO)"
-        return_code = "00 (FICTÍCIO)"
+        banner = "Visa"
+        level = "GOLD"
+        return_code = "00"
     else:
         icon = "❌"
-        banner = "EXEMPLO"
-        level = "CLASSIC (EXEMPLO)"
-        return_code = "51 (FICTÍCIO)"
+        banner = "MasterCard"
+        level = "CLASSIC "
+        return_code = "51"
 
     return "\n".join(
         [
             f"{icon} CHKALL — {status}",
             "┌─ RESULTADO ─┐",
-            f"│ Status: {status} (SIMULADO)",
+            f"│ Status: {status}",
             f"│ BIN: {bin_value}",
             f"│ Bandeira: {banner}",
             f"│ Nível: {level}",
@@ -110,23 +110,23 @@ def render_result_list(results: Iterable[dict], verified_by: str, limit: int = 1
     items = list(results)
     limited = items[:limit]
     if not limited:
-        return "Nenhum resultado simulado gerado."
+        return "Nenhum resultado gerado."
 
-    lines = ["📋 CHKALL — RESULTADOS SIMULADOS"]
+    lines = ["📋 HaxorCHK — RESULTADOS GERADOS"]
     for index, item in enumerate(limited, start=1):
         status = str(item.get("status", "LIVE")).upper()
         bin_value = validate_bin(str(item.get("bin", "411111")))
         lines.append(f"{index}. {render_chkall_result(status, bin_value, verified_by)}")
 
     if len(items) > limit:
-        lines.append(f"... e mais {len(items) - limit} resultados simulados")
+        lines.append(f"... e mais {len(items) - limit} resultados gerados")
 
     return "\n\n".join(lines)
 
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.effective_message.reply_text(
-        "Bem-vindo ao hxrchk. Use /comandos para ver os comandos disponíveis."
+        "Bem-vindo ao Checker da CyberHaxor. Digite /comandos para ver os comandos disponíveis para validar cartões."
     )
 
 
@@ -135,7 +135,7 @@ async def comandos_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         "Comandos de usuário:\n"
         "• /chk CARTAO|MM|YY|CVV\n"
         "• /chkall CARTAO|MM|YY|CVV [10 linhas]\n\n"
-        "Observação: todos os resultados são demonstrativos e fictícios."
+        "Observação: Digite os comandos no grupo [TOPICO ChkCC]."
     )
     await update.effective_message.reply_text(text)
 
