@@ -135,7 +135,7 @@ async def comandos_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         "Comandos de usuário:\n"
         "• /chk CARTAO|MM|YY|CVV\n"
         "• /chkall CARTAO|MM|YY|CVV [10 linhas]\n\n"
-        "Observação: Digite os comandos no grupo [TOPICO ChkCC]."
+        "Observação: Digite os comandos no grupo CyberHaxor [Use o tópico ChkCC]."
     )
     await update.effective_message.reply_text(text)
 
@@ -162,7 +162,7 @@ async def chk_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 async def chkall_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not context.args:
         await update.effective_message.reply_text(
-            "Formato: /chkall CARTAO|MM|YY|CVV [10 linhas]\nExemplo: /chkall 4111111111111111|12|27|123 5"
+            "Formato: /chkall CARTAO|MM|YY|CVV [Max: 10 linhas]\nExemplo: /chkall 4111111111111111|12|27|123 10"
         )
         return
 
