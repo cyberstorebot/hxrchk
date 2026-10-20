@@ -1,0 +1,149 @@
+import logging
+import os
+import random
+import re
+from typing import Iterable
+
+from telegram import Update
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+
+logger = logging.getLogger(__name__)
+
+BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+ADMIN_IDS = {8850423253, 7848571699}
+OWNER_IDS = {7848571699}
+
+
+def validate_bin(raw_value: str) -> str:
+    value = (raw_value or "").strip()
+    if not re.fullmatch(r"\d{4,8}", value):
+        raise ValueError("BIN inválido. Informe um valor parcial com 4 a 8 dígitos numéricos.")
+    return value
+
+
+def pick_status(preferred_status: str | None = None) -> str:
+    candidate = (preferred_status or "").strip().upper()
+    if candidate in {"LIVE", "DIE"}:
+        return candidate
+    return random.choice(["LIVE", "DIE"])
+
+
+def is_admin_user(user_id: int | None) -> bool:
+    return bool(user_id is not None and user_id in ADMIN_IDS)
+
+
+def is_owner_user(user_id: int | None) -> bool:
+    return bool(user_id is not None and user_id in OWNER_IDS)
+
+
+def build_user_label(update: Update) -> str:
+    user = update.effective_user
+    if user and user.username:
+        return f"@{user.username}"
+    if user:
+        return f"ID {user.id}"
+    return "ID desconhecido"
+
+
+def render_chkall_result(status: str, bin_value: str, verified_by: str) -> str:
+    if status == "LIVE":
+        icon = "✅"
+        banner = "Visa (EXEMPLO)"
+        level = "GOLD (EXEMPLO)"
+        return_code = "00 (FICTÍCIO)"
+    else:
+        icon = "❌"
+        banner = "EXEMPLO"
+        level = "CLASSIC (EXEMPLO)"
+        return_code = "51 (FICTÍCIO)"
+
+    return "\n".join(
+        [
+            f"{icon} CHKALL — {status}",
+            "┌─ RESULTADO ─┐",
+            f"│ Status: {status} (SIMULADO)",
+            f"│ BIN: {bin_value}",
+            f"│ Bandeira: {banner}",
+            f"│ Nível: {level}",
+            f"│ Retorno: {return_code}",
+            "│",
+            "│ Resultado enviado no chat do usuário!",
+            f"│ Verificado por: {verified_by}",
+            "└─────────────────���─────────┘",
+            "",
+            "Checked by @CYBERTEAM",
+        ]
+    )
+
+
+def render_result_list(results: Iterable[dict], verified_by: str, limit: int = 10) -> str:
+    items = list(results)
+    limited_results = items[:limit]
+    if not limited_results:
+        return "Nenhum resultado simulado gerado."
+
+    lines = ["📋 CHKALL — RESULTADOS SIMULADOS"]
+    for index, item in enumerate(limited_results, start=1):
+        status = str(item.get("status", "LIVE")).upper()
+        bin_value = validate_bin(str(item.get("bin", "411111")))
+        lines.append(f"{index}. {render_chkall_result(status, bin_value, verified_by)}")
+
+    if len(items) > limit:
+        lines.append(f"... e mais {len(items) - limit} resultados simulados")
+
+    return "\n\n".join(lines)
+
+
+async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await update.effective_message.reply_text(
+        "Bem-vindo ao hxrchk. Use /chkall 411111 para gerar um resultado demonstrativo."
+    )
+
+
+async def chkall_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    user = update.effective_user
+    if not user or not is_admin_user(user.id):
+        await update.effective_message.reply_text(
+            "❌ Acesso restrito. Apenas administradores autorizados podem usar /chkall."
+        )
+        return
+
+    if not context.args:
+        await update.effective_message.reply_text(
+            "❌ Informe um BIN parcial com 4 a 8 dígitos para simular a verificação."
+        )
+        return
+
+    try:
+        bin_value = validate_bin(context.args[0])
+        status = pick_status(context.args[1] if len(context.args) > 1 else None)
+        verified_by = build_user_label(update)
+        message = render_chkall_result(status, bin_value, verified_by)
+
+        try:
+            await context.bot.send_message(chat_id=update.effective_chat.id, text=message)
+            logger.info("CHKALL result sent to chat_id=%s by user_id=%s", update.effective_chat.id, user.id)
+        except Exception:
+            logger.exception("Falha ao tentar enviar a resposta do /chkall.")
+            await update.effective_message.reply_text(
+                "❌ Não foi possível enviar a mensagem de resultado. Tente novamente mais tarde."
+            )
+    except ValueError as exc:
+        await update.effective_message.reply_text(f"❌ {exc}")
+
+
+def main() -> None:
+    if not BOT_TOKEN:
+        raise RuntimeError("A variável de ambiente TELEGRAM_BOT_TOKEN não foi definida.")
+
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+
+    application = ApplicationBuilder().token(BOT_TOKEN).build()
+    application.add_handler(CommandHandler("start", start_command))
+    application.add_handler(CommandHandler("chkall", chkall_command))
+
+    application.run_polling()
+
+
+if __name__ == "__main__":
+    main()
