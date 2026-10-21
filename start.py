@@ -9,7 +9,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
 logger = logging.getLogger(__name__)
 
-BOT_TOKEN = os.getenv("8891474481:AAEzPhza9lRsLgpJ_MBk-9TdULjHx6AyKKg")
+BOT_TOKEN = os.getenv("8843258561:AAE2b6G_y_37tFgnkQOjSfalOuvAFa0LSO0")
 
 
 def build_user_label(update: Update) -> str:
